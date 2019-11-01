@@ -8,6 +8,7 @@ public class GeneticKnapsackProblem {
     Map<Integer, KnapSackItem> knapsackItems;
     List<Individual> population;
     List<Individual> children;
+    List<Individual> competitors;
     private long populationLastRouletteEnd;
     private long competitorsLastRouletteEnd;
     private int crossoverPointsCount = 1;
@@ -18,11 +19,19 @@ public class GeneticKnapsackProblem {
     String valuesFilePath = "values.txt";
     Individual optimumIndividual = null;
     int basePopulationFitness;
-    boolean scalingFitnesses = false;
+    boolean scalingFitnessesInChoosingParents = true;
+    boolean scalingFitnessesInSurvivorsSelection = false;
+    public static final int MU_AND_LANDA_MODE = 1;
+    public static final int MU_PLUS_LANDA_MODE = 2;
+    private int survivorsSelectionMode = MU_AND_LANDA_MODE;
 
     GeneticKnapsackProblem(int knapsackMaxWeight, int maxGenerationNumber){
         this.knapsackMaxWeight = knapsackMaxWeight;
         this.maxGenerationNumber = maxGenerationNumber;
+    }
+
+    public void setSurvivorsSelectionMode(int survivorsSelectionMode) {
+        this.survivorsSelectionMode = survivorsSelectionMode;
     }
 
     public void setChildrenSize(int childrenSize) {
@@ -116,7 +125,7 @@ public class GeneticKnapsackProblem {
     public void calculatePopulationFitness(){
         basePopulationFitness = -1;
         for(int i=0; population.size()>i; i++){
-            calcFitness(population.get(i));
+            if(population.get(i).fitness == 0) calcFitness(population.get(i));
 
             if(optimumIndividual == null || population.get(i).fitness > optimumIndividual.fitness) {
                 optimumIndividual = population.get(i);
@@ -138,7 +147,7 @@ public class GeneticKnapsackProblem {
             population.get(i).rouletteStart = populationLastRouletteEnd + 1;
             population.get(i).rouletteEnd =
                 population.get(i).rouletteStart
-                    + (scalingFitnesses ? population.get(i).scaledFitness : population.get(i).fitness)
+                    + (scalingFitnessesInChoosingParents ? population.get(i).scaledFitness : population.get(i).fitness)
                     - 1;
 
             if(population.get(i).rouletteStart > population.get(i).rouletteEnd){
@@ -221,7 +230,7 @@ public class GeneticKnapsackProblem {
         long sumScaledFitness = 0;
         for(int i=0; population.size()>i; i++) {
             sumScaledFitness +=
-                (scalingFitnesses ? population.get(i).scaledFitness : population.get(i).fitness);
+                (scalingFitnessesInChoosingParents ? population.get(i).scaledFitness : population.get(i).fitness);
         }
         double distance = ((double) sumScaledFitness) / targetChildrenSize;
         double start = UsefulUtils.generateRandomDoubleNumber(0, distance);
@@ -303,60 +312,62 @@ public class GeneticKnapsackProblem {
     }
 
     public void preparingCompetitors(){
+        competitors = new ArrayList<>();
+        competitors.addAll(population);
+        competitors.addAll(children);
         int numberOfWastedChilds = 0;
 
-        for(int i=0; children.size()>i; i++){
-            calcFitness(children.get(i));
-            children.get(i).scaledFitness = children.get(i).fitness - basePopulationFitness;
-            if(children.get(i).scaledFitness < 0) children.get(i).scaledFitness = 0;
+        for(int i=0; competitors.size()>i; i++){
+            if(competitors.get(i).fitness == 0) calcFitness(competitors.get(i));
+            competitors.get(i).scaledFitness = competitors.get(i).fitness - basePopulationFitness;
+            if(competitors.get(i).scaledFitness < 0) competitors.get(i).scaledFitness = 0;
 
-            if(optimumIndividual == null || children.get(i).fitness > optimumIndividual.fitness) {
-                optimumIndividual = children.get(i);
+            if(optimumIndividual == null || competitors.get(i).fitness > optimumIndividual.fitness) {
+                optimumIndividual = competitors.get(i);
                 printLocalOptimumIndividual();
             }
-            if(children.get(i).fitness == 0) numberOfWastedChilds++;
+            if(competitors.get(i).fitness == 0) numberOfWastedChilds++;
         }
-        competitorsLastRouletteEnd = populationLastRouletteEnd;
+        competitorsLastRouletteEnd = -1;
 
-        for(int i=0; children.size()>i; i++){
-            children.get(i).rouletteStart = competitorsLastRouletteEnd + 1;
-            children.get(i).rouletteEnd =
-                children.get(i).rouletteStart
-                    + (scalingFitnesses ? children.get(i).scaledFitness : children.get(i).fitness)
+        IndividualsComparator individualsComparator =
+                new IndividualsComparator(IndividualsComparator.SORT_BY_SCALED_FITNESS);
+        individualsComparator.setOrderMode(IndividualsComparator.ORDER_DESCENDING);
+        Collections.sort(competitors, individualsComparator);
+
+        for(int i=0; competitors.size()>i; i++){
+            competitors.get(i).rouletteStart = competitorsLastRouletteEnd + 1;
+            competitors.get(i).rouletteEnd =
+                    competitors.get(i).rouletteStart
+                    + (scalingFitnessesInSurvivorsSelection ? competitors.get(i).scaledFitness : competitors.get(i).fitness)
                     - 1;
 
-            if(children.get(i).rouletteStart > children.get(i).rouletteEnd){
-                children.get(i).rouletteStart = -1;
-                children.get(i).rouletteEnd = -1;
+            if(competitors.get(i).rouletteStart > competitors.get(i).rouletteEnd){
+                competitors.get(i).rouletteStart = -1;
+                competitors.get(i).rouletteEnd = -1;
             }
-            else competitorsLastRouletteEnd = children.get(i).rouletteEnd;
+            else competitorsLastRouletteEnd = competitors.get(i).rouletteEnd;
         }
-
-        /*System.out.println(
-            "Generation " + generationNumber + " Wasted Childs: " + numberOfWastedChilds);*/
     }
 
     public void chooseSurvivors(){
         List<Individual> survivors = new ArrayList<>();
+
         long sumScaledFitness = 0;
-        for(int i=0; population.size()>i; i++){
+        for(int i=0; competitors.size()>i; i++){
             sumScaledFitness +=
-                (scalingFitnesses ? population.get(i).scaledFitness : population.get(i).fitness);
+                (scalingFitnessesInSurvivorsSelection ? competitors.get(i).scaledFitness : competitors.get(i).fitness);
         }
-        for(int i=0; children.size()>i; i++){
-            sumScaledFitness +=
-                (scalingFitnesses ? children.get(i).scaledFitness : children.get(i).fitness);
-        }
+
         double distance = ((double) sumScaledFitness) / populationSize;
         double start = UsefulUtils.generateRandomDoubleNumber(0, distance);
         double pointer = start;
 
         int lastIndex = 0;
         while(pointer <= competitorsLastRouletteEnd){
-            for(int i=lastIndex; (population.size() + children.size())>i; i++){
+            for(int i=lastIndex; competitors.size()>i; i++){
                 lastIndex = i;
-                Individual individual = i < population.size() ?
-                        population.get(i) : children.get(i - population.size());
+                Individual individual = competitors.get(i);
 
                 if(pointer <= individual.rouletteEnd){
                     survivors.add(individual);
@@ -368,6 +379,7 @@ public class GeneticKnapsackProblem {
 
         population = survivors;
         children = null;
+        competitors = null;
         generationNumber++;
         basePopulationFitness = -1;
     }
@@ -397,7 +409,15 @@ public class GeneticKnapsackProblem {
             if((generationNumber % 200) == 0)
                 System.out.println("Generation " + generationNumber + " Done!");
         }
+
+        sortPopulation(IndividualsComparator.SORT_BY_FITNESS);
+        printPopulation();
         printFinalOptimumIndividual();
+    }
+
+    public void sortPopulation(int sortMode){
+        IndividualsComparator individualsComarator = new IndividualsComparator(sortMode);
+        Collections.sort(population, individualsComarator);
     }
 
     public void printPopulation(){

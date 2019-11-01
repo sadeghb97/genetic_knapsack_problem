@@ -52,10 +52,13 @@ public class Individual {
 
         for(int i=0; representation.size()>i; i++){
             if(i != 0) stringBuilder.append(", ");
-            stringBuilder.append(String.valueOf(representation.get(i)));
+            stringBuilder.append((boolean) representation.get(i) ? 1 : 0);
         }
         stringBuilder.append("]");
-        stringBuilder.append(" - " + fitness + " - " + scaledFitness);
+        stringBuilder.append(" - " + UsefulUtils.getWideNumber(fitness));
+        stringBuilder.append(" - " + UsefulUtils.getWideNumber(scaledFitness));
+        stringBuilder.append(" - " + UsefulUtils.getWideNumber(rouletteStart));
+        stringBuilder.append(" - " + UsefulUtils.getWideNumber(rouletteEnd));
         return stringBuilder.toString();
     }
 }
