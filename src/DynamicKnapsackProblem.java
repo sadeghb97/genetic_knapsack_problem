@@ -1,34 +1,14 @@
 import java.util.*;
 
-public class KnapSackProblem {
-    public static void start(String[] args) {
+public class DynamicKnapsackProblem {
+    public static void start() {
         int []w;
         int []v;
         int number;
-
-        boolean isMinimal = false;
-        String weightsFilePath;
-        String valuesFilePath;
-        int kw;
-
-        if(isMinimal){
-            weightsFilePath = Problem.minimalKnapsackWeightsFilePath;
-            valuesFilePath = Problem.minimalKnapsackValuesFilePath;
-            kw = Problem.minimalKnapsackMaxWeight;
-        }
-        else {
-            weightsFilePath = Problem.mainKnapsackWeightsFilePath;
-            valuesFilePath = Problem.mainKnapsackValuesFilePath;
-            kw = Problem.mainKnapsackMaxWeight;
-        }
+        ProblemData problemData = ProblemData.getInstance();
 
         try {
-            String weightsContents = UsefulUtils.readAllFile(weightsFilePath);
-            String valuesContents = UsefulUtils.readAllFile(valuesFilePath);
-            String[] weightPieces = weightsContents.split("\n");
-            String[] valuesPieces = valuesContents.split("\n");
-
-            number = weightPieces.length;
+            number = problemData.knapsackItems.size();
             number++;
             w=new int[number];
             v=new int[number];
@@ -36,8 +16,8 @@ public class KnapSackProblem {
             w[0] = 0;
             v[0] = 0;
             for(int i=1; number > i; i++){
-                w[i] = Integer.valueOf(weightPieces[i-1].trim());
-                v[i] = Integer.valueOf(valuesPieces[i-1].trim());
+                w[i] = Integer.valueOf(problemData.knapsackItems.get(i).weight);
+                v[i] = Integer.valueOf(problemData.knapsackItems.get(i).value);
             }
 
             System.out.println();
@@ -54,7 +34,8 @@ public class KnapSackProblem {
             System.out.printf("\nSum of Weight: %d | Sum of Values: %d\n",sw,sv);
 
             System.out.println();
-            System.out.printf("Max Value: %d\n", bottomUpKP(w, v, number, kw));
+            System.out.printf("Max Value: %d\n", bottomUpKP(w, v, number,
+                    problemData.knapsackMaxWeight));
         }
         catch (Exception ex){
             System.out.println("Exception: " + ex.getMessage());
@@ -62,7 +43,7 @@ public class KnapSackProblem {
         }
     }
     
-    public static int bottomUpKP(int w[],int v[],int n,int kw){
+    private static int bottomUpKP(int w[],int v[],int n,int kw){
         int op[][]=new int[kw+1][n];
         for(int i=1; kw+1>i; i++){
             for(int j=0; n>j; j++){
@@ -99,7 +80,7 @@ public class KnapSackProblem {
         return op[kw][n-1];
     }
     
-    public static void printItems(int items[][],int w[],int kw,int n){
+    private static void printItems(int items[][],int w[],int kw,int n){
         boolean first=true;
         System.out.println("Selected Items:");
         int lastItem=items[kw][n-1];

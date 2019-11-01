@@ -1,37 +1,36 @@
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GeneticKnapsackProblem {
-    private int knapsackMaxWeight;
+    private ProblemData problemData;
     private int populationSize = 100;
-    Map<Integer, KnapSackItem> knapsackItems;
     List<Individual> population;
     List<Individual> children;
     List<Individual> competitors;
     private long populationLastRouletteEnd;
     private long competitorsLastRouletteEnd;
     private int crossoverPointsCount = 1;
-    private int maxGenerationNumber;
+    private int maxGenerationNumber = 200;
     private int generationNumber;
     private int childrenSize;
-    String weightsFilePath = "weights.txt";
-    String valuesFilePath = "values.txt";
     Individual optimumIndividual = null;
     int basePopulationFitness;
-    boolean scalingFitnessesInChoosingParents = true;
-    boolean scalingFitnessesInSurvivorsSelection = false;
-    public static final int MU_AND_LANDA_MODE = 1;
-    public static final int MU_PLUS_LANDA_MODE = 2;
-    private int survivorsSelectionMode = MU_AND_LANDA_MODE;
+    private boolean scalingFitnessesInChoosingParents = true;
+    private boolean scalingFitnessesInSurvivorsSelection = false;
+    public static final int MU_AND_LAMBDA_MODE = 1;
+    public static final int MU_PLUS_LAMBDA_MODE = 2;
+    private int survivorsSelectionMode = MU_AND_LAMBDA_MODE;
 
-    GeneticKnapsackProblem(int knapsackMaxWeight, int maxGenerationNumber){
-        this.knapsackMaxWeight = knapsackMaxWeight;
-        this.maxGenerationNumber = maxGenerationNumber;
+    GeneticKnapsackProblem(){
+        problemData = ProblemData.getInstance();
     }
 
     public void setSurvivorsSelectionMode(int survivorsSelectionMode) {
         this.survivorsSelectionMode = survivorsSelectionMode;
+    }
+
+    public void setMaxGenerationNumber(int maxGenerationNumber) {
+        this.maxGenerationNumber = maxGenerationNumber;
     }
 
     public void setChildrenSize(int childrenSize) {
@@ -46,22 +45,6 @@ public class GeneticKnapsackProblem {
         this.crossoverPointsCount = crossoverPointsCount;
     }
 
-    public String getWeightsFilePath() {
-        return weightsFilePath;
-    }
-
-    public void setWeightsFilePath(String weightsFilePath) {
-        this.weightsFilePath = weightsFilePath;
-    }
-
-    public String getValuesFilePath() {
-        return valuesFilePath;
-    }
-
-    public void setValuesFilePath(String valuesFilePath) {
-        this.valuesFilePath = valuesFilePath;
-    }
-
     public int getPopulationSize() {
         return populationSize;
     }
@@ -70,34 +53,12 @@ public class GeneticKnapsackProblem {
         this.populationSize = populationSize;
     }
 
-    public void loadKnapsackItems(String weightsFilePath, String valuesFilePath) throws IOException {
-        String weightsContents = UsefulUtils.readAllFile(weightsFilePath);
-        String valuesContents = UsefulUtils.readAllFile(valuesFilePath);
-        String[] weightPieces = weightsContents.split("\n");
-        String[] valuesPieces = valuesContents.split("\n");
-
-        knapsackItems = new HashMap();
-        for(int i=0; weightPieces.length>i; i++){
-            KnapSackItem knapSackItem = new KnapSackItem(
-                    i+1,
-                    Integer.valueOf(weightPieces[i].trim()),
-                    Integer.valueOf(valuesPieces[i].trim()));
-
-            knapsackItems.put(i+1, knapSackItem);
-        }
-
-        printKnapsackItems();
+    public void setScalingFitnessesInChoosingParents(boolean scalingFitnessesInChoosingParents) {
+        this.scalingFitnessesInChoosingParents = scalingFitnessesInChoosingParents;
     }
 
-    public void loadKnapsackItems() throws IOException {
-        loadKnapsackItems(weightsFilePath, valuesFilePath);
-    }
-
-    public void printKnapsackItems(){
-        System.out.println("\nKnapsack Items: ");
-        for(int i=1; knapsackItems.size()>=i; i++)
-            System.out.println("Item " + i + ": " + knapsackItems.get(i).toString());
-        System.out.println();
+    public void setScalingFitnessesInSurvivorsSelection(boolean scalingFitnessesInSurvivorsSelection) {
+        this.scalingFitnessesInSurvivorsSelection = scalingFitnessesInSurvivorsSelection;
     }
 
     public void generatePopulation(){
@@ -112,7 +73,7 @@ public class GeneticKnapsackProblem {
             List representation = null;
             while(!correct) {
                 representation = new ArrayList();
-                for (int j = 0; knapsackItems.size() > j; j++) {
+                for (int j = 0; problemData.knapsackItems.size() > j; j++) {
                     representation.add(random.nextBoolean());
                 }
                 correct = getFitness(representation) > 0;
@@ -120,6 +81,7 @@ public class GeneticKnapsackProblem {
             Individual individual = new Individual(representation);
             population.add(individual);
         }
+        System.out.println();
     }
 
     public void calculatePopulationFitness(){
@@ -169,12 +131,12 @@ public class GeneticKnapsackProblem {
         int sumWeight = 0;
         for (int i = 0; representationList.size() > i; i++) {
             if ((boolean) representationList.get(i)) {
-                fitness += knapsackItems.get(Integer.valueOf(i + 1)).value;
-                sumWeight += knapsackItems.get(Integer.valueOf(i + 1)).weight;
-                if (sumWeight > knapsackMaxWeight) break;
+                fitness += problemData.knapsackItems.get(Integer.valueOf(i + 1)).value;
+                sumWeight += problemData.knapsackItems.get(Integer.valueOf(i + 1)).weight;
+                if (sumWeight > problemData.knapsackMaxWeight) break;
             }
         }
-        return sumWeight > knapsackMaxWeight ? 0 : fitness;
+        return sumWeight > problemData.knapsackMaxWeight ? 0 : fitness;
     }
 
     private List<Individual> chooseParentsWithRouletteWheel() throws Exception{
