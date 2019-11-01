@@ -6,7 +6,7 @@ public class Main {
     public static void main(String[] args) {
         try { problemData.loadKnapsackData(ProblemData.MAIN_PROBLEM_DATA); }
         catch (Exception ex){
-            System.out.println("\n" + ex.getMessage() + "\n");
+            System.out.println("\n" + ex.getMessage());
         }
 
         while (mainMenu());
@@ -45,7 +45,7 @@ public class Main {
             else if (choice == 2) problemData.loadKnapsackData(ProblemData.MAIN_PROBLEM_DATA);
         }
         catch (Exception ex){
-            System.out.println("\n" + ex.getMessage() + "\n");
+            System.out.println("\n" + ex.getMessage());
         }
     }
 
@@ -64,7 +64,7 @@ public class Main {
             geneticKnapsackProblem.solve();
         }
         catch (Exception ex){
-            System.out.println("\nException: " + ex.getMessage() + "\n");
+            System.out.println("\nException: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
