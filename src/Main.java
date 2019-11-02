@@ -21,7 +21,7 @@ public class Main {
         System.out.println("5: Dynamic Programming Solve");
         System.out.println("6: Exit");
         System.out.print("\nEnter Your Choice: ");
-        int choice = SBProScanner.inputInt(1, 5);
+        int choice = SBProScanner.inputInt(1, 6);
 
         if(choice==1) loadItems();
         else if(choice == 2) problemData.printKnapsackItems();
