@@ -51,11 +51,11 @@ public class GAConfigs {
         }
         else if(choice == 3){
             System.out.print("\nEnter number of crossover points: ");
-            childrenSize = SBProScanner.inputInt(1, 8);
+            crossoverPointsCount = SBProScanner.inputInt(1, 8);
         }
         else if(choice == 4){
             System.out.print("\nEnter max generation number: ");
-            childrenSize = SBProScanner.inputInt(1, 100000);
+            maxGenerationNumber = SBProScanner.inputInt(1, 100000);
         }
         else if(choice == 5){
             System.out.print("\nScaling fitnesses in choosing parents (1:Yes | 2:No): ");
